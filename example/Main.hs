@@ -10,7 +10,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Data.Witherable
 import Reflex
-import Reflex.GLFW.Simple
+import Reflex.GLFW.Simple.Events
 import Reflex.Host.Basic
 import Prelude hiding (filter)
 import qualified Graphics.UI.GLFW as GLFW
