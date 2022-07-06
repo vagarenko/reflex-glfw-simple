@@ -17,30 +17,48 @@ import qualified Graphics.UI.GLFW as GLFW
 import qualified Reflex.GLFW.Simple.Events as E
 
 -- | Events and Dynamics of a window.
-data WindowEventsAndDyns t a = WindowEventsAndDyns
-    { window          :: GLFW.Window
+data WindowEventsAndDyns t = WindowEventsAndDyns
+    { -- | Window handle.
+      window          :: GLFW.Window
+      -- | Window position.
     , windowPos       :: Dynamic t (Int, Int)
+      -- | Window size.
     , windowSize      :: Dynamic t (Int, Int)
+      -- | Event fired when the user attempts to close the window.
     , windowClose     :: Event t ()
+      -- | Event fired when the client area of the window needs to be redrawn.
     , windowRefresh   :: Event t ()
+      -- | Does window has focus?
     , windowFocus     :: Dynamic t Bool
+      -- | Is window iconified?
     , windowIconify   :: Dynamic t Bool
+      -- | Framebuffer size.
     , framebufferSize :: Dynamic t (Int, Int)
+      -- | Event fired on key press, release or repeat.
+      -- Carries 'Key' value, 'Int' scancode, 'KeyState' and wether 
+      -- modifeir keys were pressed.
     , key             :: Event t (GLFW.Key, Int, GLFW.KeyState, GLFW.ModifierKeys)
+      -- | Event fired when a character is typed.
     , char            :: Event t Char
+      -- | Event fired when a character is typed. Additionally carries modifier keys state.
     , charMods        :: Event t (Char, GLFW.ModifierKeys)
+      -- | Event fired when a mouse button pressed or released.
     , mouseButton     :: Event t (GLFW.MouseButton, GLFW.MouseButtonState, GLFW.ModifierKeys)
-    , cursorPos       :: Dynamic t (a, a)
+      -- | Cursor position.
+    , cursorPos       :: Dynamic t (Float, Float)
+      -- | Is the cursor inside the window?
     , cursorEnter     :: Dynamic t GLFW.CursorState
-    , scroll          :: Event t (a, a)
+      -- | Event fired when the user scrolls with the mouse wheel or a touch gesture.
+    , scroll          :: Event t (Float, Float)
+      -- | Event fired when one or more dragged files are dropped on the window.
     , fileDrop        :: Event t [FilePath]
     }
 
 -- | Create Events and Dynamics for given window.
 windowEventsAndDyns ::
-       (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m, Floating a)
+       (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
     => GLFW.Window
-    -> m (WindowEventsAndDyns t a)
+    -> m (WindowEventsAndDyns t)
 windowEventsAndDyns window = do
     windowPos0       <- liftIO $ GLFW.getWindowPos window
     windowSize0      <- liftIO $ GLFW.getWindowSize window
@@ -76,7 +94,7 @@ filterMouseButtonE ::
 filterMouseButtonE e btn =
     (\(_, s, k) -> (s, k)) <$> ffilter (\(b, _, _) -> b == btn) e
 
-mouseButtonDyn :: (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m, Floating a) => WindowEventsAndDyns t a -> GLFW.MouseButton -> m (Dynamic t GLFW.MouseButtonState)
+mouseButtonDyn :: (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m) => WindowEventsAndDyns t -> GLFW.MouseButton -> m (Dynamic t GLFW.MouseButtonState)
 mouseButtonDyn win btn = do
     s <- liftIO $ GLFW.getMouseButton (window win) btn
     holdDyn s (fst <$> filterMouseButtonE (mouseButton win) btn)

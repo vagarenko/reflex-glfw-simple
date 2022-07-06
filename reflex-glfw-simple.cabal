@@ -27,8 +27,8 @@ library
     -Wall
   build-depends:
       base                 >=4.7 && <5
-    , reflex               >=0.6.4
-    , GLFW-b               >=3.2.1
+    , reflex               >=0.8.2
+    , GLFW-b               >=3.3
   default-language:   Haskell2010
 
 executable example
@@ -37,8 +37,7 @@ executable example
   build-depends:
       base                 >=4.7 && <5
     , reflex-glfw-simple
-    , reflex               >=0.6.4
-    , reflex-basic-host    >=0.2
+    , reflex               >=0.8.2
     , GLFW-b               >=3.3
     , witherable           >=0.3
     , stm                  >=2.5
