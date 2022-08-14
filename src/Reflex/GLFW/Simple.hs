@@ -4,8 +4,8 @@ module Reflex.GLFW.Simple (
       E.errors
     , E.monitor
     , E.joystick
-    , WindowEventsAndDyns(..)
-    , windowEventsAndDyns
+    , WindowReflexes(..)
+    , windowReflexes
     , filterMouseButtonE
     , mouseButtonDyn
 ) where
@@ -17,7 +17,7 @@ import qualified Graphics.UI.GLFW as GLFW
 import qualified Reflex.GLFW.Simple.Events as E
 
 -- | Events and Dynamics of a window.
-data WindowEventsAndDyns t = WindowEventsAndDyns
+data WindowReflexes t = WindowReflexes
     { -- | Window handle.
       window          :: GLFW.Window
       -- | Window position.
@@ -55,11 +55,11 @@ data WindowEventsAndDyns t = WindowEventsAndDyns
     }
 
 -- | Create Events and Dynamics for given window.
-windowEventsAndDyns ::
+windowReflexes ::
        (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
     => GLFW.Window
-    -> m (WindowEventsAndDyns t)
-windowEventsAndDyns window = do
+    -> m (WindowReflexes t)
+windowReflexes window = do
     windowPos0       <- liftIO $ GLFW.getWindowPos window
     windowSize0      <- liftIO $ GLFW.getWindowSize window
     windowFocus0     <- liftIO $ GLFW.getWindowFocused window
@@ -84,17 +84,21 @@ windowEventsAndDyns window = do
                        =<< E.cursorEnter window
     scroll          <- E.scroll window
     fileDrop        <- E.fileDrop window
-    pure WindowEventsAndDyns {..}
+    pure WindowReflexes {..}
 
 filterMouseButtonE ::
-      (Reflex t)
+       (Reflex t)
     => Event t (GLFW.MouseButton, GLFW.MouseButtonState, GLFW.ModifierKeys)
     -> GLFW.MouseButton
     -> Event t (GLFW.MouseButtonState, GLFW.ModifierKeys)
 filterMouseButtonE e btn =
     (\(_, s, k) -> (s, k)) <$> ffilter (\(b, _, _) -> b == btn) e
 
-mouseButtonDyn :: (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m) => WindowEventsAndDyns t -> GLFW.MouseButton -> m (Dynamic t GLFW.MouseButtonState)
+mouseButtonDyn ::
+       (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+    => WindowReflexes t
+    -> GLFW.MouseButton
+    -> m (Dynamic t GLFW.MouseButtonState)
 mouseButtonDyn win btn = do
     s <- liftIO $ GLFW.getMouseButton (window win) btn
     holdDyn s (fst <$> filterMouseButtonE (mouseButton win) btn)

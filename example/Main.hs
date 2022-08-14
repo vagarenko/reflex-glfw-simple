@@ -23,7 +23,7 @@ main = do
     bracket_ initialize GLFW.terminate $
         bracket createWindow (\w -> GLFW.setWindowShouldClose w True >> GLFW.destroyWindow w) $ \win -> do
             runHeadlessApp $ mdo
-                WindowEventsAndDyns {..} <- windowEventsAndDyns win
+                WindowReflexes {..} <- windowReflexes win
                 printE "errors"   =<< errors
                 printE "monitor"  =<< monitor
                 printE "joystick" =<< joystick
