@@ -15,7 +15,9 @@ import Reflex
 import Reflex.GLFW.Simple
 import Reflex.GLFW.Simple.Events (errors, monitor, joystick)
 import Reflex.Host.Headless
+
 import Prelude hiding (filter)
+
 import qualified Graphics.UI.GLFW as GLFW
 
 main :: IO ()

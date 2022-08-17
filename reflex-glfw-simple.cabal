@@ -24,11 +24,12 @@ library
       Reflex.GLFW.Simple
     , Reflex.GLFW.Simple.Events
   ghc-options:
-    -Wall
+    -Wall -Wmissing-fields
   build-depends:
       base                 >=4.7 && <5
     , reflex               >=0.8.2
     , GLFW-b               >=3.3
+    , witherable           >=0.3
   default-language:   Haskell2010
 
 executable example
@@ -40,5 +41,5 @@ executable example
     , reflex               >=0.8.2
     , GLFW-b               >=3.3
     , witherable           >=0.3
-  ghc-options:        -Wall -threaded -rtsopts
+  ghc-options:        -Wall -Wmissing-fields -threaded -rtsopts
   default-language:   Haskell2010
