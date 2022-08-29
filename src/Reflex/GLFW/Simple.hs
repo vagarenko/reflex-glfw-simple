@@ -45,44 +45,44 @@ data WindowReflexes t = WindowReflexes
       -- Carries 'Key' value, 'Int' scancode, 'KeyState' and wether 
       -- modifeir keys were pressed.
     , key               :: Event t (GLFW.Key, Int, GLFW.KeyState, GLFW.ModifierKeys)
-      -- | Get Dynamic with a state of a specific key.
-    , getKeyDyn         :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+      -- | Make Dynamic with a state of a specific key.
+    , mkKeyDyn          :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
                         => GLFW.Key
                         -> m (Dynamic t GLFW.KeyState)
-      -- | Get Dynamic which holds 'True' if specific key is released.
-    , getKeyUpDyn       :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+      -- | Make Dynamic which holds 'True' if specific key is released.
+    , mkKeyUpDyn        :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
                         => GLFW.Key
                         -> m (Dynamic t Bool)
-      -- | Get Dynamic which holds 'True' if specific key is pressed OR repeating.
-    , getKeyDownDyn     :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+      -- | Make Dynamic which holds 'True' if specific key is pressed OR repeating.
+    , mkKeyDownDyn      :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
                         => GLFW.Key
                         -> m (Dynamic t Bool)
-      -- | Get Dynamic which holds 'True' if specific key is pressed.
-    , getKeyPressedDyn  :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+      -- | Make Dynamic which holds 'True' if specific key is pressed.
+    , mkKeyPressedDyn   :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
                         => GLFW.Key
                         -> m (Dynamic t Bool)
-      -- | Get Dynamic which holds 'True' if specific key is repeating.
-    , getKeyRepeatingDyn :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
-                         => GLFW.Key
-                         -> m (Dynamic t Bool)
+      -- | Make Dynamic which holds 'True' if specific key is repeating.
+    , mkKeyRepeatingDyn :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+                        => GLFW.Key
+                        -> m (Dynamic t Bool)
       -- | Event fired when a character is typed.
     , char              :: Event t Char
       -- | Event fired when a character is typed. Additionally carries modifier keys state.
     , charMods          :: Event t (Char, GLFW.ModifierKeys)
       -- | Event fired when a mouse button pressed or released.
     , mouseButton       :: Event t (GLFW.MouseButton, GLFW.MouseButtonState, GLFW.ModifierKeys)
-      -- | Get Dynamic with a state of a specific mouse button.
-    , getMouseButtonDyn :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+      -- | Make Dynamic with a state of a specific mouse button.
+    , mkMouseButtonDyn  :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
                         => GLFW.MouseButton
                         -> m (Dynamic t GLFW.MouseButtonState)
-      -- | Get Dynamic which holds 'True' if a specific button is down.
-    , getMouseButtonDownDyn :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
-                            => GLFW.MouseButton
-                            -> m (Dynamic t Bool)
-      -- | Get Dynamic which holds 'True' if a specific button is up.
-    , getMouseButtonUpDyn   :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
-                            => GLFW.MouseButton
-                            -> m (Dynamic t Bool)
+      -- | Make Dynamic which holds 'True' if a specific button is down.
+    , mkMouseButtonDownDyn :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+                           => GLFW.MouseButton
+                           -> m (Dynamic t Bool)
+      -- | Make Dynamic which holds 'True' if a specific button is up.
+    , mkMouseButtonUpDyn   :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+                           => GLFW.MouseButton
+                           -> m (Dynamic t Bool)
       -- | Cursor position.
     , cursorPos         :: Dynamic t (Float, Float)
       -- | Is the cursor inside the window?
@@ -129,23 +129,23 @@ windowReflexes window = do
     scroll          <- E.scroll window
     fileDrop        <- E.fileDrop window
 
-    let getMouseButtonDyn btn = do
+    let mkMouseButtonDyn btn = do
             s <- liftIO $ GLFW.getMouseButton window btn
             holdDyn s (fst <$> filterMouseButtonE mouseButton btn)
-        getKeyDyn k = do
+        mkKeyDyn k = do
             s <- liftIO $ GLFW.getKey window k
             holdDyn s (fst <$> filterKeyE key k)
 
         (<&&>) :: (Functor f1, Functor f2) => f1 (f2 a) -> (a -> b) -> f1 (f2 b)
         (<&&>) = flip (fmap . fmap)
 
-        getMouseButtonDownDyn btn = getMouseButtonDyn btn <&&> (== GLFW.MouseButtonState'Pressed)
-        getMouseButtonUpDyn   btn = getMouseButtonDyn btn <&&> (== GLFW.MouseButtonState'Released)
+        mkMouseButtonDownDyn btn = mkMouseButtonDyn btn <&&> (== GLFW.MouseButtonState'Pressed)
+        mkMouseButtonUpDyn   btn = mkMouseButtonDyn btn <&&> (== GLFW.MouseButtonState'Released)
 
-        getKeyUpDyn        k = getKeyDyn k <&&> (== GLFW.KeyState'Released)
-        getKeyDownDyn      k = getKeyDyn k <&&> (\s -> s == GLFW.KeyState'Pressed || s == GLFW.KeyState'Repeating)
-        getKeyPressedDyn   k = getKeyDyn k <&&> (== GLFW.KeyState'Pressed)
-        getKeyRepeatingDyn k = getKeyDyn k <&&> (== GLFW.KeyState'Repeating)
+        mkKeyUpDyn        k = mkKeyDyn k <&&> (== GLFW.KeyState'Released)
+        mkKeyDownDyn      k = mkKeyDyn k <&&> (\s -> s == GLFW.KeyState'Pressed || s == GLFW.KeyState'Repeating)
+        mkKeyPressedDyn   k = mkKeyDyn k <&&> (== GLFW.KeyState'Pressed)
+        mkKeyRepeatingDyn k = mkKeyDyn k <&&> (== GLFW.KeyState'Repeating)
 
     pure WindowReflexes
         { window
@@ -164,14 +164,14 @@ windowReflexes window = do
         , cursorEnter
         , scroll
         , fileDrop
-        , getMouseButtonDyn
-        , getKeyDyn
-        , getMouseButtonDownDyn
-        , getMouseButtonUpDyn
-        , getKeyUpDyn
-        , getKeyDownDyn
-        , getKeyPressedDyn
-        , getKeyRepeatingDyn
+        , mkMouseButtonDyn
+        , mkKeyDyn
+        , mkMouseButtonDownDyn
+        , mkMouseButtonUpDyn
+        , mkKeyUpDyn
+        , mkKeyDownDyn
+        , mkKeyPressedDyn
+        , mkKeyRepeatingDyn
         }
 
 -- | Filter events for a specific mouse button.

@@ -46,6 +46,9 @@ main = do
                 printDyn "framebufferSize" framebufferSize
                 printDyn "cursorEnter"     cursorEnter
                 printDyn "cursorPos"       cursorPos
+
+                printDyn "key W down dyn" =<< mkKeyDownDyn GLFW.Key'W
+                printDyn "key W up dyn"   =<< mkKeyUpDyn   GLFW.Key'W
                 
                 ePostBuild <- getPostBuild
                 eInput <- performEventAsync ((\f -> liftIO $ GLFW.waitEvents >> f ()) <$ leftmost [ePostBuild, eInput])
