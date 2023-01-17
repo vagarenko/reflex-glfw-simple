@@ -1,156 +1,193 @@
+{-# LANGUAGE
+      NamedFieldPuns
+    , RankNTypes
+#-}
+
 module Reflex.GLFW.Simple (
-      errors
-    , monitor
-    , joystick
-    , windowPos
-    , windowSize
-    , windowClose
-    , windowRefresh
-    , windowFocus
-    , windowIconify
-    , framebufferSize
-    , key
-    , char
-    , charMods
-    , mouseButton
-    , cursorPos
-    , cursorEnter
-    , scroll
-    , fileDrop
+      E.errors
+    , E.monitor
+    , E.joystick
+    , WindowReflexes(..)
+    , windowReflexes
+    , filterMouseButtonE
+    , filterKeyE
 ) where
 
+import Data.Bifunctor
+import Data.Witherable
 import Control.Monad.IO.Class ( MonadIO(..) )
-import Reflex ( Reflex(Event), TriggerEvent(newTriggerEvent) )
-import Graphics.UI.GLFW as GLFW
+import Reflex ( Reflex(..), MonadHold(), TriggerEvent(), holdDyn )
 
--- | Event fired when GLFW error occurs. Carries error code and human-readable description.
-errors :: (Reflex t, TriggerEvent t m, MonadIO m) => m (Event t (GLFW.Error, String))
-errors = mkEvent2 GLFW.setErrorCallback
-{-# INLINE errors #-}
+import Prelude hiding (filter)
 
--- | Event fired when a monitor is connected or disconnected.
-monitor :: (Reflex t, TriggerEvent t m, MonadIO m) => m (Event t (GLFW.Monitor, GLFW.MonitorState))
-monitor = mkEvent2 GLFW.setMonitorCallback
-{-# INLINE monitor #-}
+import qualified Graphics.UI.GLFW as GLFW
+import qualified Reflex.GLFW.Simple.Events as E
 
--- | Event fired when a joystick is connected or disconnected.
-joystick :: (Reflex t, TriggerEvent t m, MonadIO m) => m (Event t (GLFW.Joystick, GLFW.JoystickState))
-joystick = mkEvent2 GLFW.setJoystickCallback
-{-# INLINE joystick #-}
+-- | Events and Dynamics of a window.
+data WindowReflexes t = WindowReflexes
+    { -- | Window handle.
+      window            :: GLFW.Window
+      -- | Window position.
+    , windowPos         :: Dynamic t (Int, Int)
+      -- | Window size.
+    , windowSize        :: Dynamic t (Int, Int)
+      -- | Event fired when the user attempts to close the window.
+    , windowClose       :: Event t ()
+      -- | Event fired when the client area of the window needs to be redrawn.
+    , windowRefresh     :: Event t ()
+      -- | Does window has focus?
+    , windowFocus       :: Dynamic t Bool
+      -- | Is window iconified?
+    , windowIconify     :: Dynamic t Bool
+      -- | Framebuffer size.
+    , framebufferSize   :: Dynamic t (Int, Int)
+      -- | Event fired on key press, release or repeat.
+      -- Carries 'Key' value, 'Int' scancode, 'KeyState' and wether 
+      -- modifeir keys were pressed.
+    , key               :: Event t (GLFW.Key, Int, GLFW.KeyState, GLFW.ModifierKeys)
+      -- | Make Dynamic with a state of a specific key.
+    , mkKeyDyn          :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+                        => GLFW.Key
+                        -> m (Dynamic t GLFW.KeyState)
+      -- | Make Dynamic which holds 'True' if specific key is released.
+    , mkKeyUpDyn        :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+                        => GLFW.Key
+                        -> m (Dynamic t Bool)
+      -- | Make Dynamic which holds 'True' if specific key is pressed OR repeating.
+    , mkKeyDownDyn      :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+                        => GLFW.Key
+                        -> m (Dynamic t Bool)
+      -- | Make Dynamic which holds 'True' if specific key is pressed.
+    , mkKeyPressedDyn   :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+                        => GLFW.Key
+                        -> m (Dynamic t Bool)
+      -- | Make Dynamic which holds 'True' if specific key is repeating.
+    , mkKeyRepeatingDyn :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+                        => GLFW.Key
+                        -> m (Dynamic t Bool)
+      -- | Event fired when a character is typed.
+    , char              :: Event t Char
+      -- | Event fired when a character is typed. Additionally carries modifier keys state.
+    , charMods          :: Event t (Char, GLFW.ModifierKeys)
+      -- | Event fired when a mouse button pressed or released.
+    , mouseButton       :: Event t (GLFW.MouseButton, GLFW.MouseButtonState, GLFW.ModifierKeys)
+      -- | Make Dynamic with a state of a specific mouse button.
+    , mkMouseButtonDyn  :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+                        => GLFW.MouseButton
+                        -> m (Dynamic t GLFW.MouseButtonState)
+      -- | Make Dynamic which holds 'True' if a specific button is down.
+    , mkMouseButtonDownDyn :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+                           => GLFW.MouseButton
+                           -> m (Dynamic t Bool)
+      -- | Make Dynamic which holds 'True' if a specific button is up.
+    , mkMouseButtonUpDyn   :: forall m. (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+                           => GLFW.MouseButton
+                           -> m (Dynamic t Bool)
+      -- | Cursor position.
+    , cursorPos         :: Dynamic t (Float, Float)
+      -- | Is the cursor inside the window?
+    , cursorEnter       :: Dynamic t GLFW.CursorState
+      -- | Event fired when the user scrolls with the mouse wheel or a touch gesture.
+    , scroll            :: Event t (Float, Float)
+      -- | Event fired when one or more dragged files are dropped on the window.
+    , fileDrop          :: Event t [FilePath]
+    }
 
--- | Event fired when the window position changes.
-windowPos :: (Reflex t, TriggerEvent t m, MonadIO m) => GLFW.Window -> m (Event t (Int, Int))
-windowPos = mkWinEvent2 . GLFW.setWindowPosCallback
-{-# INLINE windowPos #-}
+-- | Create Events and Dynamics for given window.
+windowReflexes ::
+       (Reflex t, MonadHold t m, TriggerEvent t m, MonadIO m)
+    => GLFW.Window
+    -> m (WindowReflexes t)
+windowReflexes window = do
+    windowPos0       <- liftIO $ GLFW.getWindowPos window
+    windowSize0      <- liftIO $ GLFW.getWindowSize window
+    windowFocus0     <- liftIO $ GLFW.getWindowFocused window
+    windowIconify0   <- liftIO $ GLFW.getWindowIconified window
+    framebufferSize0 <- liftIO $ GLFW.getFramebufferSize window
+    cursorPos0       <- liftIO $ GLFW.getCursorPos window
+    cursorEnter0     <- liftIO $ GLFW.getWindowAttrib window GLFW.WindowAttrib'Hovered
 
--- | Event fired when the window size changes.
-windowSize :: (Reflex t, TriggerEvent t m, MonadIO m) => GLFW.Window -> m (Event t (Int, Int))
-windowSize = mkWinEvent2 . GLFW.setWindowSizeCallback 
-{-# INLINE windowSize #-}
+    windowPos       <- holdDyn windowPos0 =<< E.windowPos window
+    windowSize      <- holdDyn windowSize0 =<< E.windowSize window
+    windowClose     <- E.windowClose window
+    windowRefresh   <- E.windowRefresh window
+    windowFocus     <- holdDyn windowFocus0 =<< E.windowFocus window
+    windowIconify   <- holdDyn windowIconify0 =<< E.windowIconify window
+    framebufferSize <- holdDyn framebufferSize0 =<< E.framebufferSize window
+    key             <- E.key window
+    char            <- E.char window
+    charMods        <- E.charMods window
+    mouseButton     <- E.mouseButton window
+    cursorPos       <- holdDyn (bimap realToFrac realToFrac cursorPos0)
+                        =<< E.cursorPos window
+    cursorEnter     <- holdDyn
+                            (if cursorEnter0
+                                then GLFW.CursorState'InWindow
+                                else GLFW.CursorState'NotInWindow
+                            )
+                        =<< E.cursorEnter window
+    scroll          <- E.scroll window
+    fileDrop        <- E.fileDrop window
 
--- | Event fired when the user attempts to close the window.
-windowClose :: (Reflex t, TriggerEvent t m, MonadIO m) => GLFW.Window -> m (Event t ())
-windowClose = mkWinEvent0 . GLFW.setWindowCloseCallback
-{-# INLINE windowClose #-}
+    let mkMouseButtonDyn btn = do
+            s <- liftIO $ GLFW.getMouseButton window btn
+            holdDyn s (fst <$> filterMouseButtonE mouseButton btn)
+        mkKeyDyn k = do
+            s <- liftIO $ GLFW.getKey window k
+            holdDyn s (fst <$> filterKeyE key k)
 
--- | Event fired when the client area of the window needs to be redrawn.
-windowRefresh :: (Reflex t, TriggerEvent t m, MonadIO m) => GLFW.Window -> m (Event t ())
-windowRefresh = mkWinEvent0 . GLFW.setWindowRefreshCallback
-{-# INLINE windowRefresh #-}
+        (<&&>) :: (Functor f1, Functor f2) => f1 (f2 a) -> (a -> b) -> f1 (f2 b)
+        (<&&>) = flip (fmap . fmap)
 
--- | Event fired when the window gains or loses focus.
-windowFocus :: (Reflex t, TriggerEvent t m, MonadIO m) => GLFW.Window -> m (Event t Bool)
-windowFocus = mkWinEvent1 . GLFW.setWindowFocusCallback
-{-# INLINE windowFocus #-}
+        mkMouseButtonDownDyn btn = mkMouseButtonDyn btn <&&> (== GLFW.MouseButtonState'Pressed)
+        mkMouseButtonUpDyn   btn = mkMouseButtonDyn btn <&&> (== GLFW.MouseButtonState'Released)
 
--- | Event fired when the window is iconified (minimized) or not.
-windowIconify :: (Reflex t, TriggerEvent t m, MonadIO m) => GLFW.Window -> m (Event t Bool)
-windowIconify = mkWinEvent1 . GLFW.setWindowIconifyCallback
-{-# INLINE windowIconify #-}
+        mkKeyUpDyn        k = mkKeyDyn k <&&> (== GLFW.KeyState'Released)
+        mkKeyDownDyn      k = mkKeyDyn k <&&> (\s -> s == GLFW.KeyState'Pressed || s == GLFW.KeyState'Repeating)
+        mkKeyPressedDyn   k = mkKeyDyn k <&&> (== GLFW.KeyState'Pressed)
+        mkKeyRepeatingDyn k = mkKeyDyn k <&&> (== GLFW.KeyState'Repeating)
 
--- | Event fired when the framebuffer's size changes.
-framebufferSize :: (Reflex t, TriggerEvent t m, MonadIO m) => GLFW.Window -> m (Event t (Int, Int))
-framebufferSize = mkWinEvent2 . GLFW.setFramebufferSizeCallback
-{-# INLINE framebufferSize #-}
+    pure WindowReflexes
+        { window
+        , windowPos
+        , windowSize
+        , windowClose
+        , windowRefresh
+        , windowFocus
+        , windowIconify
+        , framebufferSize
+        , key
+        , char
+        , charMods
+        , mouseButton
+        , cursorPos
+        , cursorEnter
+        , scroll
+        , fileDrop
+        , mkMouseButtonDyn
+        , mkKeyDyn
+        , mkMouseButtonDownDyn
+        , mkMouseButtonUpDyn
+        , mkKeyUpDyn
+        , mkKeyDownDyn
+        , mkKeyPressedDyn
+        , mkKeyRepeatingDyn
+        }
 
--- | Event fired on key press, release or repeat.
--- Carries 'Key' value, 'Int' scancode, 'KeyState' and wether modifeir keys were pressed.
-key :: (Reflex t, TriggerEvent t m, MonadIO m) => GLFW.Window -> m (Event t (GLFW.Key, Int, GLFW.KeyState, GLFW.ModifierKeys))
-key = mkWinEvent4 . GLFW.setKeyCallback
-{-# INLINE key #-}
+-- | Filter events for a specific mouse button.
+filterMouseButtonE ::
+       (Reflex t)
+    => Event t (GLFW.MouseButton, GLFW.MouseButtonState, GLFW.ModifierKeys)
+    -> GLFW.MouseButton
+    -> Event t (GLFW.MouseButtonState, GLFW.ModifierKeys)
+filterMouseButtonE e btn =
+    (\(_, s, mk) -> (s, mk)) <$> filter (\(b, _, _) -> b == btn) e
 
--- | Event fired when a character is typed.
-char :: (Reflex t, TriggerEvent t m, MonadIO m) => GLFW.Window -> m (Event t Char)
-char = mkWinEvent1 . GLFW.setCharCallback
-{-# INLINE char #-}
-
--- | Event fired when a character is typed. Additionally carries modifier keys state.
-charMods :: (Reflex t, TriggerEvent t m, MonadIO m) => GLFW.Window -> m (Event t (Char, GLFW.ModifierKeys))
-charMods = mkWinEvent2 . GLFW.setCharModsCallback
-{-# INLINE charMods #-}
-
--- | Event fired when a mouse button pressed or released.
-mouseButton :: (Reflex t, TriggerEvent t m, MonadIO m) => GLFW.Window -> m (Event t (GLFW.MouseButton, GLFW.MouseButtonState, GLFW.ModifierKeys))
-mouseButton = mkWinEvent3 . GLFW.setMouseButtonCallback
-{-# INLINE mouseButton #-}
-
--- | Event fired when the cursor position changes. Sub-pixel accuracy is used, when available.
-cursorPos :: (Reflex t, TriggerEvent t m, MonadIO m) => GLFW.Window -> m (Event t (Double, Double))
-cursorPos = mkWinEvent2 . GLFW.setCursorPosCallback
-{-# INLINE cursorPos #-}
-
--- | Event fired when the cursor enters or leaves the window.
-cursorEnter :: (Reflex t, TriggerEvent t m, MonadIO m) => GLFW.Window -> m (Event t GLFW.CursorState)
-cursorEnter = mkWinEvent1 . GLFW.setCursorEnterCallback
-{-# INLINE cursorEnter #-}
-
--- | Event fired when the user scrolls with the mouse wheel or a touch gesture.
-scroll :: (Reflex t, TriggerEvent t m, MonadIO m) => GLFW.Window -> m (Event t (Double, Double))
-scroll = mkWinEvent2 . GLFW.setScrollCallback
-{-# INLINE scroll #-}
-
--- | Event fired when one or more dragged files are dropped on the window.
-fileDrop :: (Reflex t, TriggerEvent t m, MonadIO m) => GLFW.Window -> m (Event t [FilePath])
-fileDrop = mkWinEvent1 . GLFW.setDropCallback
-{-# INLINE fileDrop #-}
-
------------------------------------------------------------
--- PRIVATE
------------------------------------------------------------
--- | Make event from glfw set*Callback function for 2 arguments.
-mkEvent2 :: (Reflex t, TriggerEvent t m, MonadIO m) => (Maybe (a -> b -> IO ()) -> IO ()) -> m (Event t (a, b))
-mkEvent2 = mkEvent $ \fire a b -> fire (a, b)
-{-# INLINE mkEvent2 #-}
-
--- | Make event from glfw setWin*Callback function for 0 arguments.
-mkWinEvent0 :: (Reflex t, TriggerEvent t m, MonadIO m) => (Maybe (GLFW.Window -> IO ()) -> IO ()) -> m (Event t ())
-mkWinEvent0 = mkEvent $ \fire _ -> fire ()
-{-# INLINE mkWinEvent0 #-}
-
--- | Make event from glfw setWin*Callback function for 1 argument.
-mkWinEvent1 :: (Reflex t, TriggerEvent t m, MonadIO m) => (Maybe (GLFW.Window -> a -> IO ()) -> IO ()) -> m (Event t a)
-mkWinEvent1 = mkEvent $ \fire _ a -> fire a
-{-# INLINE mkWinEvent1 #-}
-
--- | Make event from glfw setWin*Callback function for 2 arguments.
-mkWinEvent2 :: (Reflex t, TriggerEvent t m, MonadIO m) => (Maybe (GLFW.Window -> a -> b -> IO ()) -> IO ()) -> m (Event t (a, b))
-mkWinEvent2 = mkEvent $ \fire _ a b -> fire (a, b)
-{-# INLINE mkWinEvent2 #-}
-
--- | Make event from glfw setWin*Callback function for 3 arguments.
-mkWinEvent3 :: (Reflex t, TriggerEvent t m, MonadIO m) => (Maybe (GLFW.Window -> a -> b -> c -> IO ()) -> IO ()) -> m (Event t (a, b, c))
-mkWinEvent3 = mkEvent $ \fire _ a b c -> fire (a, b, c)
-{-# INLINE mkWinEvent3 #-}
-
--- | Make event from glfw setWin*Callback function for 4 arguments.
-mkWinEvent4 :: (Reflex t, TriggerEvent t m, MonadIO m) => (Maybe (GLFW.Window -> a -> b -> c -> d -> IO ()) -> IO ()) -> m (Event t (a, b, c, d))
-mkWinEvent4 = mkEvent $ \fire _ a b c d -> fire (a, b, c, d)
-{-# INLINE mkWinEvent4 #-}
-
--- |
-mkEvent :: (Reflex t, TriggerEvent t m, MonadIO m) => ((a -> IO ()) -> cb) -> (Maybe cb -> IO ()) -> m (Event t a)
-mkEvent fireFn setCallback = do
-    (event, fire) <- newTriggerEvent
-    liftIO $ setCallback $ Just $ fireFn fire
-    pure event
-{-# INLINE mkEvent #-}
+-- | Filter events for a specific key.
+filterKeyE ::
+       (Reflex t)
+    => Event t (GLFW.Key, Int, GLFW.KeyState, GLFW.ModifierKeys)
+    -> GLFW.Key
+    -> Event t (GLFW.KeyState, GLFW.ModifierKeys)
+filterKeyE e key =
+    (\(_, _, s, mk) -> (s, mk)) <$> filter (\(k, _, _, _) -> k == key) e

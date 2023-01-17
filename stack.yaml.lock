@@ -5,19 +5,26 @@
 
 packages:
 - completed:
-    hackage: reflex-0.6.4@sha256:faa63a6f6aefda8acc154de324ee135bccd0cd62f8fdf840ac11feae10e6191c,11190
+    hackage: reflex-0.8.2.0@sha256:2ea3db2ed15b83eed6b15f7c1aaceeda9e783b611ac530032f6aeaf0d33b8ef0,11974
     pantry-tree:
-      size: 4461
-      sha256: 6b5da914688044a387ea2cf43ffcbb177928e94e905e3421dfe7ca8b4cb2985b
+      size: 4587
+      sha256: e748409809abe4aefda0c6f4feeb55024b1eb75c948c9724c8a6129c79390377
   original:
-    hackage: reflex-0.6.4@sha256:faa63a6f6aefda8acc154de324ee135bccd0cd62f8fdf840ac11feae10e6191c,11190
+    hackage: reflex-0.8.2.0@sha256:2ea3db2ed15b83eed6b15f7c1aaceeda9e783b611ac530032f6aeaf0d33b8ef0,11974
 - completed:
-    hackage: GLFW-b-3.2.1.0@sha256:cb626762f730e8440ec2ac7628c5790685a8ea9e931037021b63b781c8f18b76,2363
+    hackage: GLFW-b-3.3.0.0@sha256:73ce15e4b82a3a9aea5ab38ae823f5313777eea5a9c3b29caf262f3495c5a1f2,2427
     pantry-tree:
       size: 482
-      sha256: b9da90c3fce08ac7c0695b3ed83e16714174bfe5ee69f32467949c7eea7875ed
+      sha256: 1f4ccbfb930578e4d60768d21b58eab393ce9b5f4da2c2e41285fcb22c06ee28
   original:
-    hackage: GLFW-b-3.2.1.0
+    hackage: GLFW-b-3.3.0.0
+- completed:
+    hackage: bindings-GLFW-3.3.2.0@sha256:e286d28248619f968c3f5ccd3fc3578c7ff4cc0372ca54635f3adce9b1d09b3a,6301
+    pantry-tree:
+      size: 4543
+      sha256: ea185a420f9a836199231ed437739b3a04655247ea7f08f2626cf9a3d8fa828c
+  original:
+    hackage: bindings-GLFW-3.3.2.0@sha256:e286d28248619f968c3f5ccd3fc3578c7ff4cc0372ca54635f3adce9b1d09b3a,6301
 - completed:
     hackage: constraints-extras-0.3.0.2@sha256:bf6884be65958e9188ae3c9e5547abfd6d201df021bff8a4704c2c4fe1e1ae5b,1784
     pantry-tree:
@@ -67,13 +74,6 @@ packages:
       sha256: c354e916cb3aa9a0728a60f08440dc589a9e6d8275f047dbe9ab73f168247561
   original:
     hackage: monoidal-containers-0.6.0.1@sha256:7d776942659eb4d70d8b8da5d734396374a6eda8b4622df9e61e26b24e9c8e40,2501
-- completed:
-    hackage: reflex-basic-host-0.2.0.1@sha256:31f6f8d88126d02250b908cc0f3673db82c0ba6162bc9ad8adceadaab4c4b122,2864
-    pantry-tree:
-      size: 455
-      sha256: 8e7200df5d492f884dd78d04bbe21dc1a7d7374f13a82d7e0abe9bf07b8529c6
-  original:
-    hackage: reflex-basic-host-0.2.0.1@sha256:31f6f8d88126d02250b908cc0f3673db82c0ba6162bc9ad8adceadaab4c4b122,2864
 snapshots:
 - completed:
     size: 524164
