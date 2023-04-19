@@ -10,10 +10,9 @@ module Main where
 import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class
-import Data.Witherable
+import Witherable
 import Reflex
 import Reflex.GLFW.Simple
-import Reflex.GLFW.Simple.Events (errors, monitor, joystick)
 import Reflex.Host.Headless
 
 import Prelude hiding (filter)
@@ -53,8 +52,8 @@ main = do
                 ePostBuild <- getPostBuild
                 eInput <- performEventAsync ((\f -> liftIO $ GLFW.waitEvents >> f ()) <$ leftmost [ePostBuild, eInput])
 
-                let escapePressed = void $ filter (\(k, _, s, _) -> k == GLFW.Key'Escape && s == GLFW.KeyState'Pressed ) key
-                    eQuit = leftmost [escapePressed, windowClose]
+                escapePressed <- void . filter id . updated <$> mkKeyDownDyn GLFW.Key'Escape
+                let eQuit = leftmost [escapePressed, windowClose]
                 pure eQuit
 
 printE :: (PerformEvent t m, MonadIO (Performable m), Show a) => String -> Event t a -> m ()

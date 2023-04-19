@@ -1,15 +1,15 @@
-resolver: lts-14.22
+resolver: nightly-2023-01-08 # ghc-9.4.4
+compiler: ghc-9.4.4
+allow-newer: true
 packages:
 - .
 extra-deps:
-  - reflex-0.8.2.0@sha256:2ea3db2ed15b83eed6b15f7c1aaceeda9e783b611ac530032f6aeaf0d33b8ef0,11974
+  - reflex-0.9.0.0
   - GLFW-b-3.3.0.0
   - bindings-GLFW-3.3.2.0@sha256:e286d28248619f968c3f5ccd3fc3578c7ff4cc0372ca54635f3adce9b1d09b3a,6301
-  - constraints-extras-0.3.0.2@sha256:bf6884be65958e9188ae3c9e5547abfd6d201df021bff8a4704c2c4fe1e1ae5b,1784
-  - patch-0.0.2.0@sha256:41f8ab2b2fa89226d39a02c9384b67341ba4a820732871c6487839d375bd14d8,2212
+  - patch-0.0.8.1
   - ref-tf-0.4.0.2@sha256:69de3550250e0cd69f45d080359cb314a9487c915024349c75b78732bbee9332,1134
-  - witherable-0.3.1@sha256:ed3d5bc9eb1c08fa9704d9e143cdf622e1bd80b847cd5ede8c07da7bc7981ab9,1313
   - dependent-sum-0.6.2.0
   - dependent-map-0.3
-  - monoidal-containers-0.6.0.1@sha256:7d776942659eb4d70d8b8da5d734396374a6eda8b4622df9e61e26b24e9c8e40,2501
+  - prim-uniq-0.2
  

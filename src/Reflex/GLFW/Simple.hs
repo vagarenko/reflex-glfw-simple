@@ -14,7 +14,7 @@ module Reflex.GLFW.Simple (
 ) where
 
 import Data.Bifunctor
-import Data.Witherable
+import Witherable
 import Control.Monad.IO.Class ( MonadIO(..) )
 import Reflex ( Reflex(..), MonadHold(), TriggerEvent(), holdDyn )
 
