@@ -1,15 +1,22 @@
-resolver: nightly-2023-01-08 # ghc-9.4.4
-compiler: ghc-9.4.4
+resolver: nightly-2024-05-06 # Stackage Nightly 2024-05-06 (ghc-9.8.2)
+compiler: ghc-9.10.1
 allow-newer: true
 packages:
 - .
+flags: 
+  Win32:
+    os-string: true
 extra-deps:
-  - reflex-0.9.0.0
-  - GLFW-b-3.3.0.0
-  - bindings-GLFW-3.3.2.0@sha256:e286d28248619f968c3f5ccd3fc3578c7ff4cc0372ca54635f3adce9b1d09b3a,6301
-  - patch-0.0.8.1
-  - ref-tf-0.4.0.2@sha256:69de3550250e0cd69f45d080359cb314a9487c915024349c75b78732bbee9332,1134
-  - dependent-sum-0.6.2.0
-  - dependent-map-0.3
-  - prim-uniq-0.2
- 
+  - filepath-1.5.3.0@sha256:0c64bc9a4f5946c86a8f0527bf40c8ba51e2c02d36eea0e20ea558c8d94166e8,4945
+  - reflex-0.9.3.1@sha256:c081146ea3216854d1e2c56605f1d3d646257f4a69c634683a454f8c7d919865,12212
+  - MemoTrie-0.6.11@sha256:edda47de940a047237c395a85ac3216db6d25888002293853d7eebd01beb5da6,1516
+  - patch-0.0.8.3@sha256:4b67b1ad2c7f8c0d999bf3903a38a176d5df2561cbe265aee85bcc9b4d8c9606,3341
+  - time-1.14@sha256:918455e07f347049c2169a43169aca77de7a2c97e33aca0b476aabcd8a79798d,6989
+  - Win32-2.14.0.0@sha256:e34af84fec733b5c0c8f052ec39499785e719e2fbbe308983adf26c82ea3704d,5942
+  - newtype-generics-0.6.2@sha256:36b26be66f5736926fbd16fa3eadfcc96d23e13433e6348f0fa9509163fd0991,2053
+  - commutative-semigroups-0.2.0.1
+  - text-short-0.1.6
+  - lens-5.3.2
+  - haskell-src-meta-0.8.14
+  - os-string-2.0.6
+  - monoidal-containers-0.6.5.0
