@@ -60,8 +60,11 @@ printE :: (PerformEvent t m, MonadIO (Performable m), Show a) => String -> Event
 printE desc ev =
     performEvent_ (fmap (\e -> liftIO $ putStrLn (desc ++ " " ++ show e)) ev)
 
-printDyn :: (PerformEvent t m, MonadIO (Performable m), Show a) => String -> Dynamic t a -> m ()
-printDyn desc = printE desc . updated
+printDyn :: (PerformEvent t m, MonadIO (Performable m), MonadIO m, MonadSample t m, Show a) => String -> Dynamic t a -> m ()
+printDyn desc dyn = do
+    initial <- sample $ current dyn
+    liftIO $ putStrLn ("(initial) " ++ desc ++ " " ++ show (initial)) 
+    printE desc $ updated dyn
 
 createWindow :: IO GLFW.Window
 createWindow = do
@@ -75,4 +78,6 @@ createWindow = do
 initialize :: IO ()
 initialize = do
     r <- GLFW.init
-    unless r (error "GLFW.init error.")
+    unless r $ do
+        e <- liftIO GLFW.getError
+        error ("GLFW.init error: " ++ show e)
